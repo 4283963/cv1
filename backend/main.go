@@ -3,6 +3,7 @@ package main
 import (
 	"locker-system/database"
 	"locker-system/handlers"
+	"locker-system/scheduler"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -10,6 +11,8 @@ import (
 
 func main() {
 	database.InitDB()
+
+	scheduler.StartOverdueChecker()
 
 	r := gin.Default()
 
@@ -26,6 +29,7 @@ func main() {
 		api.GET("/lockers", handlers.GetLockers)
 		api.POST("/lockers/:code/deposit", handlers.DepositLocker)
 		api.POST("/lockers/pickup", handlers.PickupLocker)
+		api.POST("/lockers/:code/mark-overdue", handlers.MarkOverdueForTesting)
 	}
 
 	r.Run(":8080")

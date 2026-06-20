@@ -6,6 +6,7 @@ import (
 
 	"locker-system/database"
 	"locker-system/models"
+	"locker-system/scheduler"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -68,7 +69,7 @@ func DepositLocker(c *gin.Context) {
 		return
 	}
 
-	if locker.Status == models.StatusOccupied {
+	if locker.Status == models.StatusOccupied || locker.Status == models.StatusOverdue {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -84,6 +85,7 @@ func DepositLocker(c *gin.Context) {
 	locker.TrackingNumber = &req.TrackingNumber
 	locker.Phone = &req.Phone
 	locker.PickupCode = &pickupCode
+	locker.DepositedAt = &now
 	locker.UpdatedAt = now
 
 	if err := tx.Save(&locker).Error; err != nil {
@@ -112,6 +114,7 @@ func DepositLocker(c *gin.Context) {
 			"tracking_number": req.TrackingNumber,
 			"phone":           req.Phone,
 			"status":          locker.Status,
+			"deposited_at":    now,
 		},
 	})
 }
@@ -161,7 +164,7 @@ func PickupLocker(c *gin.Context) {
 		return
 	}
 
-	if locker.Status != models.StatusOccupied {
+	if locker.Status != models.StatusOccupied && locker.Status != models.StatusOverdue {
 		tx.Rollback()
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    400,
@@ -170,12 +173,14 @@ func PickupLocker(c *gin.Context) {
 		return
 	}
 
+	wasOverdue := locker.Status == models.StatusOverdue
 	now := time.Now().Unix()
 
 	locker.Status = models.StatusAvailable
 	locker.TrackingNumber = nil
 	locker.Phone = nil
 	locker.PickupCode = nil
+	locker.DepositedAt = nil
 	locker.UpdatedAt = now
 
 	if err := tx.Save(&locker).Error; err != nil {
@@ -195,12 +200,34 @@ func PickupLocker(c *gin.Context) {
 		return
 	}
 
+	message := "取件成功，柜门已打开"
+	if wasOverdue {
+		message = "取件成功（逾期件），柜门已打开"
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
-		"message": "取件成功，柜门已打开",
+		"message": message,
 		"data": gin.H{
 			"code":   locker.Code,
 			"status": locker.Status,
 		},
+	})
+}
+
+func MarkOverdueForTesting(c *gin.Context) {
+	code := c.Param("code")
+
+	if err := scheduler.MarkLockerOverdueForTesting(code); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "已标记为逾期（测试用）",
 	})
 }

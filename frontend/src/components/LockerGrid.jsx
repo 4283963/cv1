@@ -1,5 +1,8 @@
 const LockerGrid = ({ lockers, selectedLocker, onLockerSelect, selectable = false }) => {
   const getLockerStatus = (locker) => {
+    if (locker.isOverdue) {
+      return 'bg-red-700 hover:bg-red-800 ring-2 ring-red-400 animate-pulse'
+    }
     if (locker.isOccupied) {
       return 'bg-red-500 hover:bg-red-600 cursor-not-allowed'
     }
@@ -12,8 +15,14 @@ const LockerGrid = ({ lockers, selectedLocker, onLockerSelect, selectable = fals
     return 'bg-green-500'
   }
 
+  const getLockerLabel = (locker) => {
+    if (locker.isOverdue) return '逾期'
+    if (locker.isOccupied) return '已占用'
+    return '空闲'
+  }
+
   const handleClick = (locker) => {
-    if (selectable && !locker.isOccupied) {
+    if (selectable && !locker.isOccupied && !locker.isOverdue) {
       onLockerSelect(locker.code)
     }
   }
@@ -31,10 +40,20 @@ const LockerGrid = ({ lockers, selectedLocker, onLockerSelect, selectable = fals
             ${getLockerStatus(locker)}
           `}
         >
-          <span className="text-2xl">{locker.code}</span>
-          <span className="text-xs mt-1 opacity-80">
-            {locker.isOccupied ? '已占用' : '空闲'}
+          <div className="flex items-center">
+            {locker.isOverdue && (
+              <span className="text-xl mr-1">⚠️</span>
+            )}
+            <span className="text-2xl">{locker.code}</span>
+          </div>
+          <span className="text-xs mt-1 opacity-90">
+            {getLockerLabel(locker)}
           </span>
+          {locker.isOverdue && (
+            <span className="text-[10px] mt-0.5 bg-yellow-400 text-red-800 px-1.5 py-0.5 rounded font-bold">
+              ! 逾期
+            </span>
+          )}
         </div>
       ))}
     </div>

@@ -29,9 +29,11 @@ export const lockerApi = {
       code: locker.code,
       status: locker.status,
       isOccupied: locker.status === 'occupied',
+      isOverdue: locker.status === 'overdue',
       trackingNumber: locker.tracking_number || null,
       phone: locker.phone || null,
       pickupCode: locker.pickup_code || null,
+      depositedAt: locker.deposited_at || null,
       createdAt: locker.created_at,
       updatedAt: locker.updated_at,
     }))
@@ -67,5 +69,12 @@ export const lockerApi = {
       status: result.data?.status,
       message: result.message,
     }
+  },
+
+  markOverdueForTesting: async (code) => {
+    const result = await fetchJson(`${BASE_URL}/lockers/${code}/mark-overdue`, {
+      method: 'POST',
+    })
+    return result
   },
 }

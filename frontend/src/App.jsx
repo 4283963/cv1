@@ -26,8 +26,9 @@ function App() {
     fetchLockers()
   }, [fetchLockers])
 
-  const availableCount = lockers.filter(l => !l.isOccupied).length
+  const availableCount = lockers.filter(l => !l.isOccupied && !l.isOverdue).length
   const occupiedCount = lockers.filter(l => l.isOccupied).length
+  const overdueCount = lockers.filter(l => l.isOverdue).length
 
   if (loading && lockers.length === 0) {
     return (
@@ -102,9 +103,17 @@ function App() {
               <div className="text-sm text-gray-500">空闲</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-red-600">{occupiedCount}</div>
+              <div className="text-3xl font-bold text-red-500">{occupiedCount}</div>
               <div className="text-sm text-gray-500">已占用</div>
             </div>
+            {overdueCount > 0 && (
+              <div className="text-center">
+                <div className="text-3xl font-bold text-red-700 animate-pulse">
+                  ⚠️ {overdueCount}
+                </div>
+                <div className="text-sm text-red-600 font-medium">逾期</div>
+              </div>
+            )}
           </div>
 
           <div className="p-6">
